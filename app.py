@@ -94,18 +94,22 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
+        
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['username'] = user.username
             session['is_admin'] = user.is_admin
             flash(f'Selamat datang kembali, {user.username}!', 'success')
-       if user.is_admin:
-            return redirect(url_for('scoreboard'))  # Jika admin, lempar ke Scoreboard
-        else:
+            
+            # Pengecekan admin yang benar ditaruh di dalam sini
+            if user.is_admin:
+                return redirect(url_for('scoreboard'))
             return redirect(url_for('dashboard'))
         else:
+            # Else ini pasangannya adalah 'if user and check_password_hash' di atas
             flash('Username atau password salah!', 'danger')
             return redirect(url_for('login'))
+            
     return render_template('login.html')
 
 @app.route('/dashboard')
