@@ -152,7 +152,7 @@ def target_ssti():
         return redirect(url_for('dashboard'))
 
     result = ""
-        if request.method == 'POST':
+    if request.method == 'POST':
         name = request.form.get('name', '')
         
         # Proteksi tambahan agar pemain tidak mengintip rahasia server Vercel/database
@@ -166,8 +166,8 @@ def target_ssti():
             except Exception as e:
                 result = f"<div class='alert alert-danger'>Error: {str(e)}</div>"
 
-            
     return render_template('ssti_challenge.html', result=result)
+
 
 @app.route('/submit_flag/<int:challenge_id>', methods=['POST'])
 def submit_flag(challenge_id):
