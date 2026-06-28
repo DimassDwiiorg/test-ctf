@@ -99,6 +99,9 @@ def login():
             session['username'] = user.username
             session['is_admin'] = user.is_admin
             flash(f'Selamat datang kembali, {user.username}!', 'success')
+       if user.is_admin:
+            return redirect(url_for('scoreboard'))  # Jika admin, lempar ke Scoreboard
+        else:
             return redirect(url_for('dashboard'))
         else:
             flash('Username atau password salah!', 'danger')
@@ -110,12 +113,20 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
-    # TAMBAHKAN INI: Jika yang login adalah admin, langsung alihkan atau batasi perilakunya
+    # Jika yang masuk ternyata admin, langsung alihkan ke scoreboard
     if session.get('is_admin'):
-        # Kamu bisa mengarahkannya ke halaman khusus admin nanti, 
-        # untuk sekarang kita bikin dia tetap aman mendarat di dashboard tanpa error
-        challenges = Challenge.query.all()
-        return render_template('dashboard.html', challenges=challenges, user_solves=[], hard_unlocked=True)
+        return redirect(url_for('scoreboard'))
+        
+    challenges = Challenge.query.all()
+    user_solves = [s.challenge_id for s in Solve.query.filter_by(user_id=session['user_id']).all()]
+    
+    easy_medium_ids = [c.id for c in Challenge.query.filter_by(level='Easy/Medium').all()]
+    solved_easy_medium = [cid for cid in user_solves if cid in easy_medium_ids]
+    
+    hard_unlocked = len(solved_easy_medium) == len(easy_medium_ids)
+    
+    return render_template('dashboard.html', challenges=challenges, user_solves=user_solves, hard_unlocked=hard_unlocked)
+
         
     challenges = Challenge.query.all()
     user_solves = [s.challenge_id for s in Solve.query.filter_by(user_id=session['user_id']).all()]
