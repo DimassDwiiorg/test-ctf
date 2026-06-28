@@ -1,0 +1,1 @@
+"CTF{ssti_fl4sk_rce_unl0ck_2026}"

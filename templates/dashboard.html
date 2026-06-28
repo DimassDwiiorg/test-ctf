@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="p-4 bg-dark rounded border border-success">
+            <h2 class="text-success">👋 Selamat Datang, {{ session.get('username') }}!</h2>
+            <p class="lead">Sistem Siap. Pilih modul di bawah ini, temukan flag-nya, dan kirimkan untuk mendapatkan skor.</p>
+            <!-- Hint Rahasia untuk Challenge Web Hacking: CTF{h1dd3n_1n_h7ml_c0mm3n7}[span_7](start_span)[span_7](end_span) -->
+        </div>
+    </div>
+</div>
+
+<h3 class="text-light mb-3">🎯 Misi CTF Tersedia</h3>
+<div class="row">
+    {% for chall in challenges %}
+    <div class="col-md-4 mb-4">
+        
+        <!-- JIKA LEVEL HARD+ TAPI BELUM UNLOCKED -->
+        {% if chall.level == 'Hard+' and not hard_unlocked %}
+        <div class="card h-100 border-danger bg-black" style="opacity: 0.65;">
+            <div class="card-body d-flex flex-column text-center justify-content-center">
+                <span class="badge bg-danger align-self-center mb-2">🔒 LEVEL HARD+</span>
+                <h5 class="card-title text-muted">{{ chall.title }}</h5>
+                <p class="card-text text-danger small">Misi terkunci! Selesaikan semua misi Easy/Medium (*Sanity Check*, *Inspector Gadget*, & *Base Enigma*) untuk membuka gerbang tantangan ini.</p>
+                <p class="fw-bold text-secondary">{{ chall.points }} Poin</p>
+            </div>
+        </div>
+        
+        <!-- JIKA LEVEL BIASA ATAU SUDAH BERHASIL UNLOCKED -->
+        {% else %}
+        <div class="card h-100 {% if chall.id in user_solves %}solved{% endif %}">
+            <div class="card-body d-flex flex-column">
+                <span class="badge {% if chall.level == 'Hard+' %}bg-danger{% else %}bg-secondary{% endif %} align-self-start mb-2">
+                    {{ chall.category }} {% if chall.level == 'Hard+' %}(Hard+){% endif %}
+                </span>
+                <h5 class="card-title text-success">{{ chall.title }}</h5>
+                <p class="card-text text-muted small flex-grow-1">{{ chall.description }}</p>
+                
+                {% if chall.level == 'Hard+' and chall.id not in user_solves %}
+                    <div class="mb-3">
+                        <a href="{{ url_for('target_ssti') }}" target="_blank" class="btn btn-outline-danger btn-sm w-100">🎯 Buka Link Target Lab</a>
+                    </div>
+                {% endif %}
+                
+                <p class="fw-bold text-warning">{{ chall.points }} Poin</p>
+                
+                {% if chall.id in user_solves %}
+                    <div class="alert alert-success p-2 mb-0 text-center text-sm">✓ Selesai</div>
+                {% else %}
+                    <form action="{{ url_for('submit_flag', challenge_id=chall.id) }}" method="POST" class="mt-2">
+                        <div class="input-group">
+                            <input type="text" name="flag" class="form-control bg-dark text-light border-secondary form-control-sm" placeholder="CTF{...}" required>
+                            <button class="btn btn-success btn-sm" type="submit">Submit</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Elemen Canvas untuk Efek Cmatrix -->
+<canvas id="cmatrixCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9998; pointer-events: none; display: none;"></canvas>
+
+<!-- TAMPILAN CUSTOM POP-UP DENGAN EFEK KACA (GLASSMORPHISM) -->
+<div id="customPopup" style="
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100vw; height: 100vh; 
+    background-color: rgba(13, 17, 23, 0.4); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px); 
+    display: none; 
+    justify-content: center; 
+    align-middle: center; 
+    align-items: center; 
+    z-index: 9999;
+">
+    <div style="
+        background: rgba(35, 39, 47, 0.6); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border-radius: 16px; 
+        padding: 30px; 
+        max-width: 500px; 
+        width: 90%; 
+        text-align: center; 
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    ">
+        <div id="popupIcon" style="font-size: 50px; margin-bottom: 15px;"></div>
+        <p id="popupText" style="color: #ffffff; font-size: 18px; line-height: 1.6; font-family: 'Courier New', monospace;"></p>
+        <button id="popupBtn" style="
+            background: #238636; 
+            color: #ffffff; 
+            border: none; 
+            padding: 10px 25px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold;
+            margin-top: 15px;
+            box-shadow: 0 0 10px rgba(35, 134, 54, 0.5);
+        ">Lanjut</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let hardPlusSolved = false;
+        
+        {% for chall in challenges %}
+            {% if chall.level == 'Hard+' %}
+                {% if chall.id in user_solves %}
+                    hardPlusSolved = true;
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        if (hardPlusSolved) {
+            jalankanEfekHacker();
+        }
+    });
+
+    function jalankanEfekHacker() {
+        const canvas = document.getElementById("cmatrixCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.style.display = "block";
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const katakana = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const alphabet = katakana.split("");
+
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+
+        const rainDrops = [];
+        for (let x = 0; x < columns; x++) {
+            rainDrops[x] = 1;
+        }
+
+        const draw = () => {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#0F0"; 
+            ctx.font = fontSize + "px monospace";
+
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() * 0.975 > 0.95) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        };
+
+        const matrixInterval = setInterval(draw, 30);
+
+        // Alur Logika Pemanggilan Custom Pop-up Berurutan
+        const popup = document.getElementById("customPopup");
+        const popupText = document.getElementById("popupText");
+        const popupIcon = document.getElementById("popupIcon");
+        const popupBtn = document.getElementById("popupBtn");
+
+        setTimeout(() => {
+            // Memunculkan Pop-up Pertama
+            popupIcon.innerHTML = "💻";
+            popupText.innerHTML = "widihh ada calon hengker baru nihh 👏👏";
+            popup.style.display = "flex";
+
+            // Aksi ketika tombol "Lanjut" di klik pada pop-up pertama
+            popupBtn.onclick = function() {
+                // Ubah konten isi ke Pop-up Kedua
+                popupIcon.innerHTML = "🤗";
+                popupText.innerHTML = "terimakasih sudah menyelesaikan semua misi yang saya buat, saya harap skill yang kamu miliki saat ini jangan sampai di salah gunakan";
+              
+                popupBtn.innerHTML = "Selesai";
+                popupBtn.onclick = function() {
+                    popup.style.display = "none";
+                    clearInterval(matrixInterval);
+                    canvas.style.display = "none";
+                };
+            };
+        }, 1000);
+    }
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 mt-4">
+        <div class="card p-4 border-danger">
+            <h3 class="text-danger">🔥 Target Environment: Python Jinja2 Engine</h3>
+            <p class="text-muted small">Server ini langsung merender string input tanpa sanitasi objek backend.</p>
+            <hr class="border-secondary">
+            
+            <form method="POST" class="mb-4">
+                <div class="mb-3">
+                    <label class="form-label text-light">Masukkan Nama Kamu untuk Menyapa Server:</label>
+                    <input type="text" name="name" class="form-control bg-dark text-light border-danger" placeholder="Contoh: Dimas atau {{ 7*7 }}" required>
+                </div>
+                <button type="submit" class="btn btn-danger w-100">Kirim Payload</button>
+            </form>
+            
+            {% if result %}
+                <h5 class="text-light">Respon Balik Server:</h5>
+                {{ result | safe }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

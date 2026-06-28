@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-warning">⚙️ Admin Dashboard</h2>
+        <p class="text-muted">Pantau aktivitas belajar dan penyelesaian misi CTF oleh para user.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card p-4">
+            <h4 class="text-success mb-3">Daftar Pengguna & Progres</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID User</th>
+                            <th>Username</th>
+                            <th>Misi yang Diselesaikan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td><span class="text-info fw-bold">{{ user.username }}</span></td>
+                            <td>
+                                {% if user.solves %}
+                                    {% for solve in user.solves %}
+                                        <span class="badge bg-success me-1">{{ solve.challenge.title }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted small">Belum menyelesaikan misi</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
