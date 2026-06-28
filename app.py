@@ -192,24 +192,18 @@ def submit_flag(challenge_id):
         
     return redirect(url_for('dashboard'))
 
-@app.route('/admin')
-def admin():
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Akses ditolak! Halaman ini khusus Admin.', 'danger')
-        return redirect(url_for('dashboard'))
-    all_solves = Solve.query.all()
-    users = User.query.filter_by(is_admin=False).all()
-    return render_template('admin.html', solves=all_solves, users=users)
-
 @app.route('/logout')
 def logout():
     session.clear()
     flash('Kamu telah logout.', 'info')
     return redirect(url_for('login'))
 
-
-    # Hapus DB lama secara manual di Termux jika skema kolom level tidak terupdate otomatis
-with app.app_context():
+# --- PERBAIKAN WAJIB UNTUK VERCEL & REGISTRASI ---
+# Kita gunakan decorator ini agar Flask otomatis membuat tabel di Neon.tech sebelum melayani user
+@app.before_request
+def setup_database_tables():
+    # Perintah ini aman dari "Working outside of application context" karena dijalankan saat request masuk
+    db.create_all()
     init_db()
 
 if __name__ == '__main__':
