@@ -152,14 +152,20 @@ def target_ssti():
         return redirect(url_for('dashboard'))
 
     result = ""
-    if request.method == 'POST':
+        if request.method == 'POST':
         name = request.form.get('name', '')
-        # Kerentanan Server-Side Template Injection sengaja dimasukkan di sini
-        template = f"<div class='alert alert-info'>Halo {name}, salam kenal dari server!</div>"
-        try:
-            result = render_template_string(template)
-        except Exception as e:
-            result = f"<div class='alert alert-danger'>Error: {str(e)}</div>"
+        
+        # Proteksi tambahan agar pemain tidak mengintip rahasia server Vercel/database
+        blacklist = ['config', 'environ', 'getenv', 'SECRET_KEY', 'DATABASE_URL']
+        if any(bad in name for bad in blacklist):
+            result = "<div class='alert alert-danger'>Payload terdeteksi berbahaya bagi server!</div>"
+        else:
+            template = f"<div class='alert alert-info'>Halo {name}, salam kenal dari server!</div>"
+            try:
+                result = render_template_string(template)
+            except Exception as e:
+                result = f"<div class='alert alert-danger'>Error: {str(e)}</div>"
+
             
     return render_template('ssti_challenge.html', result=result)
 
