@@ -110,6 +110,13 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
+    # TAMBAHKAN INI: Jika yang login adalah admin, langsung alihkan atau batasi perilakunya
+    if session.get('is_admin'):
+        # Kamu bisa mengarahkannya ke halaman khusus admin nanti, 
+        # untuk sekarang kita bikin dia tetap aman mendarat di dashboard tanpa error
+        challenges = Challenge.query.all()
+        return render_template('dashboard.html', challenges=challenges, user_solves=[], hard_unlocked=True)
+        
     challenges = Challenge.query.all()
     user_solves = [s.challenge_id for s in Solve.query.filter_by(user_id=session['user_id']).all()]
     
