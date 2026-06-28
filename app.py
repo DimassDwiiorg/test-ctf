@@ -42,7 +42,7 @@ class Solve(db.Model):
 def init_db():
     # Buat admin jika belum terdaftar di database
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', password=generate_password_hash('shamod1703'), is_admin=True)
+        admin = User(username='admin', password=generate_password_hash('shamod1703', method='pbkdf2'), is_admin=True)
         db.session.add(admin)
     
     # Buat tantangan default jika tabel Challenge masih kosong
@@ -80,7 +80,7 @@ def register():
         if User.query.filter_by(username=username).first():
             flash('Username sudah terdaftar!', 'danger')
             return redirect(url_for('register'))
-        hashed_pw = generate_password_hash(password)
+        hashed_pw = generate_password_hash(password, method='pbkdf2')
         new_user = User(username=username, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
