@@ -128,18 +128,6 @@ def dashboard():
     solved_easy_medium = [cid for cid in user_solves if cid in easy_medium_ids]
     
     hard_unlocked = len(solved_easy_medium) == len(easy_medium_ids)
-    
-    return render_template('dashboard.html', challenges=challenges, user_solves=user_solves, hard_unlocked=hard_unlocked)
-
-        
-    challenges = Challenge.query.all()
-    user_solves = [s.challenge_id for s in Solve.query.filter_by(user_id=session['user_id']).all()]
-    
-    easy_medium_ids = [c.id for c in Challenge.query.filter_by(level='Easy/Medium').all()]
-    solved_easy_medium = [cid for cid in user_solves if cid in easy_medium_ids]
-    
-    hard_unlocked = len(solved_easy_medium) == len(easy_medium_ids)
-    
     return render_template('dashboard.html', challenges=challenges, user_solves=user_solves, hard_unlocked=hard_unlocked)
 
 @app.route('/scoreboard')
