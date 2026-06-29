@@ -41,7 +41,7 @@ class Solve(db.Model):
 # ==================== DATABASE INIT ====================
 def init_db():
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', password=generate_password_hash('shamod1703', method='pbkdf2:sha256'), is_admin=True)
+        admin = User(username='admin', password=generate_password_hash('shamod123', method='pbkdf2:sha256'), is_admin=True)
         db.session.add(admin)
     
     if not Challenge.query.first():
