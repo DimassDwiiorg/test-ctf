@@ -14,7 +14,7 @@ if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI
 
 db = SQLAlchemy(app)
 
-# Models
+# ==================== MODELS ====================
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -38,14 +38,12 @@ class Solve(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-# Inisialisasi Database bawaan dengan pengecekan tabel cloud yang aman
+# ==================== DATABASE INIT ====================
 def init_db():
-    # Buat admin jika belum terdaftar di database
     if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', password=generate_password_hash('shamod1703', method='pbkdf2:sha256'), is_admin=True)
         db.session.add(admin)
     
-    # Buat tantangan default jika tabel Challenge masih kosong
     if not Challenge.query.first():
         challs = [
             Challenge(title="Sanity Check", category="Welcome", description="Selamat datang! Flag untuk tantangan ini adalah: CTF{w3lc0m3_t0_th3_g4m3}", flag="CTF{w3lc0m3_t0_th3_g4m3}", points=50, level='Easy/Medium'),
@@ -57,18 +55,19 @@ def init_db():
             db.session.add(c)
     db.session.commit()
 
-# Trigger otomatis pembuatan tabel secara aman sebelum melayani request pertama kali
 @app.before_request
 def setup_database_tables():
-    # Mencegah loop/rekursi pemanggilan database pada serverless environment
     if not getattr(app, '_database_initialized', False):
         db.create_all()
         init_db()
         app._database_initialized = True
 
+# ==================== ROUTES ====================
 @app.route('/')
 def index():
     if 'user_id' in session:
+        if session.get('is_admin'):
+            return redirect(url_for('scoreboard'))
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
@@ -101,12 +100,10 @@ def login():
             session['is_admin'] = user.is_admin
             flash(f'Selamat datang kembali, {user.username}!', 'success')
             
-            # Pengecekan admin yang benar ditaruh di dalam sini
             if user.is_admin:
                 return redirect(url_for('scoreboard'))
             return redirect(url_for('dashboard'))
         else:
-            # Else ini pasangannya adalah 'if user and check_password_hash' di atas
             flash('Username atau password salah!', 'danger')
             return redirect(url_for('login'))
             
@@ -117,7 +114,6 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
-    # Jika yang masuk ternyata admin, langsung alihkan ke scoreboard
     if session.get('is_admin'):
         return redirect(url_for('scoreboard'))
         
@@ -128,6 +124,7 @@ def dashboard():
     solved_easy_medium = [cid for cid in user_solves if cid in easy_medium_ids]
     
     hard_unlocked = len(solved_easy_medium) == len(easy_medium_ids)
+    
     return render_template('dashboard.html', challenges=challenges, user_solves=user_solves, hard_unlocked=hard_unlocked)
 
 @app.route('/scoreboard')
@@ -153,6 +150,9 @@ def scoreboard():
 def target_ssti():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+        
+    if session.get('is_admin'):
+        return redirect(url_for('scoreboard'))
         
     user_solves = [s.challenge_id for s in Solve.query.filter_by(user_id=session['user_id']).all()]
     easy_medium_ids = [c.id for c in Challenge.query.filter_by(level='Easy/Medium').all()]
@@ -207,4 +207,3 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-    
